@@ -48,13 +48,14 @@
       #mobile-portrait-overlay {
         display: none;
         position: fixed;
-        z-index: 9999;
+        z-index: 2147483647 !important; /* Always on top, even in fullscreen */
         top: 0; left: 0; right: 0; bottom: 0;
         width: 100vw;
         height: 100vh;
         background: #000;
         justify-content: center;
         align-items: center;
+        pointer-events: none; /* Allow clicks to pass through if needed */
       }
       #mobile-portrait-overlay img {
         max-width: 100vw;
@@ -64,10 +65,11 @@
         object-fit: contain;
         display: block;
         margin: 0 auto;
+        pointer-events: auto;
       }
       @media (max-width: 900px) and (orientation: portrait) {
         #mobile-portrait-overlay {
-          display: flex;
+          display: flex !important;
         }
       }
       @media (orientation: landscape) {
@@ -93,6 +95,10 @@
       </div>
       <!-- Move fullscreen button inside unity-container, after canvas, for fullscreen visibility -->
       <button id="mobile-fullscreen-toggle" title="Toggle Fullscreen">⛶</button>
+      <!-- Mobile Portrait Overlay: انتقال به داخل unity-container -->
+      <div id="mobile-portrait-overlay">
+        <img src="ax.png" alt="ax" />
+      </div>
     </div>
     <script>
       var buildUrl = "Build";
@@ -235,7 +241,7 @@
         // Debug: log fullscreen state and button
         console.log("updateFSBtn called. fullscreenElement:", document.fullscreenElement, "fsBtn:", fsBtn);
         if (document.fullscreenElement) {
-          fsBtn.textContent = "🡸";
+          fsBtn.textContent = "←";
           fsBtn.classList.add("active");
           fsBtn.style.zIndex = "99999";
         } else {
@@ -261,10 +267,7 @@
       document.addEventListener('msfullscreenchange', updateFSBtn);
       updateFSBtn();
     </script>
-    <!-- Mobile Portrait Overlay -->
-    <div id="mobile-portrait-overlay">
-      <img src="ax.png" alt="ax" />
-    </div>
+    <!-- Mobile Portrait Overlay: حذف از body، منتقل شد به unity-container -->
 <script>
   // Fallback for mobile orientation overlay
   function updateMobilePortraitOverlay() {
@@ -284,11 +287,23 @@
     } else {
       portrait = window.innerHeight > window.innerWidth;
     }
-    overlay.style.display = portrait ? "flex" : "none";
+    // اگر در fullscreen و portrait هستیم، overlay را حتماً نمایش بده
+    var isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+    if (portrait && isFullscreen) {
+      overlay.style.display = "flex";
+    } else {
+      overlay.style.display = portrait ? "flex" : "none";
+    }
   }
   window.addEventListener("orientationchange", updateMobilePortraitOverlay);
   window.addEventListener("resize", updateMobilePortraitOverlay);
   document.addEventListener("DOMContentLoaded", updateMobilePortraitOverlay);
+</script>
+<script>
+  // Ensure overlay updates on fullscreen changes as well
+  document.addEventListener("fullscreenchange", updateMobilePortraitOverlay);
+  document.addEventListener("webkitfullscreenchange", updateMobilePortraitOverlay);
+  document.addEventListener("msfullscreenchange", updateMobilePortraitOverlay);
 </script>
   </body>
 </html>
