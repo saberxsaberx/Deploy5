@@ -104,7 +104,7 @@
       var buildUrl = "Build";
       var loaderUrl = buildUrl + "/6e077fec10f98e288645d7ddcba411e6.loader.js";
       var config = {
-        dataUrl: buildUrl + "/076cba9b38377106615fa612c28eb319.data",
+        dataUrl: buildUrl + "/d9ef0f7d331bc5f3915b46582a487583.data",
         frameworkUrl: buildUrl + "/ec64e6fff29f063d6233da598ce4cfbe.framework.js",
         codeUrl: buildUrl + "/d3a0ae44fc60b01d9a8bc3a8c1289f61.wasm",
         streamingAssetsUrl: "StreamingAssets",
@@ -130,7 +130,7 @@
         var rawDPR = window.devicePixelRatio || 1;
         var maxDPR = 2.0; // حداکثر کیفیت
         var minDPR = 1.0; // حداقل کیفیت
-        var smartDPR = 1;//Math.min(Math.max(rawDPR, minDPR), maxDPR);
+        var smartDPR = Math.min(Math.max(rawDPR, minDPR), maxDPR);
 
         config.devicePixelRatio = smartDPR;
 
