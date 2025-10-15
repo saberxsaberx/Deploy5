@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | Flagm8</title>
+    <title>Unity WebGL Player | {{{ PRODUCT_NAME }}}</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
@@ -91,7 +91,7 @@
       <div id="unity-footer">
         <div id="unity-webgl-logo"></div>
         <div id="unity-fullscreen-button"></div>
-          <div id="unity-build-title">Flagm8</div>
+          <div id="unity-build-title">{{{ PRODUCT_NAME }}}</div>
       </div>
       <!-- Move fullscreen button inside unity-container, after canvas, for fullscreen visibility -->
       <button id="mobile-fullscreen-toggle" title="Toggle Fullscreen">⛶</button>
@@ -102,15 +102,15 @@
     </div>
     <script>
       var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/354822118816744e982432150c750690.loader.js";
+      var loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
       var config = {
-        dataUrl: buildUrl + "/1fa6ea1188d2ba8518c75b73ecfa4544.data",
-        frameworkUrl: buildUrl + "/ec64e6fff29f063d6233da598ce4cfbe.framework.js",
-        codeUrl: buildUrl + "/89596b414c170e1330a852fe4d40506d.wasm",
+        dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+        frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+        codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
         streamingAssetsUrl: "StreamingAssets",
-        companyName: "DefaultCompany",
-        productName: "Flagm8",
-        productVersion: "1.0.0",
+        companyName: "{{{ COMPANY_NAME }}}",
+        productName: "{{{ PRODUCT_NAME }}}",
+        productVersion: "{{{ PRODUCT_VERSION }}}",
       };
 
       var container = document.querySelector("#unity-container");
@@ -126,26 +126,36 @@
       if (isMobile) {
         container.className = "unity-mobile";
 
-        // 🎯 Smart Scaling
-        var rawDPR = window.devicePixelRatio || 1;
-        var maxDPR = 2.0; // حداکثر کیفیت
-        var minDPR = 1.0; // حداقل کیفیت
-        var smartDPR = Math.min(Math.max(rawDPR, minDPR), maxDPR);
+// 🎯 Smart Dynamic Scaling for WebGL (optimized)
+var rawDPR = window.devicePixelRatio || 1;
 
-        config.devicePixelRatio = smartDPR;
+// در گوشی‌های خیلی قوی می‌تونیم تا 1.5 بریم، ولی معمولاً بهتره کمتر باشه
+var maxDPR = 1.25;
+var minDPR = 0.75;
 
-        function resizeCanvas() {
-          canvas.width = window.innerWidth * smartDPR;
-          canvas.height = window.innerHeight * smartDPR;
-          canvas.style.width = window.innerWidth + "px";
-          canvas.style.height = window.innerHeight + "px";
-        }
+// تشخیص بر اساس رزولوشن دستگاه (گوشی‌های بزرگ → scale پایین‌تر)
+var baseWidth = window.innerWidth;
+if (baseWidth > 1080) maxDPR = 1.0;
+if (baseWidth < 720) minDPR = 0.75;
 
-        function fitMobileCanvas() {
-          resizeCanvas();
-          container.style.width = "100vw";
-          container.style.height = "100vh";
-        }
+var smartDPR = Math.min(Math.max(rawDPR, minDPR), maxDPR);
+config.devicePixelRatio = smartDPR;
+
+// ⚙️ تنظیم خود Canvas
+function resizeCanvas() {
+  const targetWidth = window.innerWidth * smartDPR;
+  const targetHeight = window.innerHeight * smartDPR;
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  canvas.style.width = window.innerWidth + "px";
+  canvas.style.height = window.innerHeight + "px";
+}
+
+function fitMobileCanvas() {
+  resizeCanvas();
+  container.style.width = "100vw";
+  container.style.height = "100vh";
+}
 
         fitMobileCanvas();
         window.addEventListener("resize", fitMobileCanvas);
