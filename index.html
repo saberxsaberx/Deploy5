@@ -1,109 +1,78 @@
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta charset="utf-8" />
     <title>Unity WebGL Player | {{{ PRODUCT_NAME }}}</title>
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
-    <script src="unity-webview.js"></script>
+    <link rel="stylesheet" href="TemplateData/style.css" />
     <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #000;
+        width: 100%;
+        height: 100%;
+      }
+      #unity-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #000;
+      }
+      canvas {
+        background: #000;
+        touch-action: none;
+      }
+      #unity-loading-bar {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60%;
+        height: 8px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      #unity-progress-bar-full {
+        height: 100%;
+        width: 0%;
+        background: #09f;
+        transition: width 0.2s ease;
+      }
       #mobile-fullscreen-toggle {
         position: absolute;
         top: 16px;
         left: 16px;
-        z-index: 99999; /* Always above canvas */
-        background: rgba(0,0,0,0.6);
+        z-index: 9999;
+        background: rgba(0,0,0,0.5);
         color: #fff;
         border: none;
-        border-radius: 6px;
+        border-radius: 8px;
         padding: 10px 14px;
-        font-size: 36px;
+        font-size: 28px;
         cursor: pointer;
-        display: none;
-        transition: background 0.2s;
-      }
-      #mobile-fullscreen-toggle.active {
-        background: rgba(0,0,0,0.85);
-      }
-      @media (max-width: 900px) {
-        #unity-container.unity-mobile, #unity-canvas {
-          width: 100vw !important;
-          height: 100vh !important;
-          margin: 0 !important;
-          padding: 0 !important;
-        }
-        html, body {
-          width: 100vw;
-          height: 100vh;
-          margin: 0;
-          padding: 0;
-          overflow: hidden;
-        }
-      }
-    </style>
-    <style>
-      /* Fullscreen overlay image for mobile portrait */
-      #mobile-portrait-overlay {
-        display: none;
-        position: fixed;
-        z-index: 2147483647 !important; /* Always on top, even in fullscreen */
-        top: 0; left: 0; right: 0; bottom: 0;
-        width: 100vw;
-        height: 100vh;
-        background: #000;
-        justify-content: center;
-        align-items: center;
-        pointer-events: none; /* Allow clicks to pass through if needed */
-      }
-      #mobile-portrait-overlay img {
-        max-width: 100vw;
-        max-height: 100vh;
-        width: 100vw;
-        height: 100vh;
-        object-fit: contain;
-        display: block;
-        margin: 0 auto;
-        pointer-events: auto;
-      }
-      @media (max-width: 900px) and (orientation: portrait) {
-        #mobile-portrait-overlay {
-          display: flex !important;
-        }
-      }
-      @media (orientation: landscape) {
-        #mobile-portrait-overlay {
-          display: none !important;
-        }
       }
     </style>
   </head>
   <body>
-    <div id="unity-container" class="unity-desktop">
+    <div id="unity-container">
       <canvas id="unity-canvas"></canvas>
       <div id="unity-loading-bar">
-        <div id="unity-logo"></div>
-        <div id="unity-progress-bar-empty">
-          <div id="unity-progress-bar-full"></div>
-        </div>
+        <div id="unity-progress-bar-full"></div>
       </div>
-      <div id="unity-footer">
-        <div id="unity-webgl-logo"></div>
-        <div id="unity-fullscreen-button"></div>
-          <div id="unity-build-title">{{{ PRODUCT_NAME }}}</div>
-      </div>
-      <!-- Move fullscreen button inside unity-container, after canvas, for fullscreen visibility -->
-      <button id="mobile-fullscreen-toggle" title="Toggle Fullscreen">⛶</button>
-      <!-- Mobile Portrait Overlay: انتقال به داخل unity-container -->
-      <div id="mobile-portrait-overlay">
-        <img src="ax.png" alt="ax" />
-      </div>
+      <button id="mobile-fullscreen-toggle">⛶</button>
     </div>
+
     <script>
-      var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
-      var config = {
+      const buildUrl = "Build";
+      const loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
+      const config = {
         dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
         frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
         codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
@@ -111,209 +80,92 @@
         companyName: "{{{ COMPANY_NAME }}}",
         productName: "{{{ PRODUCT_NAME }}}",
         productVersion: "{{{ PRODUCT_VERSION }}}",
+        webglContextAttributes: {
+          preserveDrawingBuffer: false,
+          powerPreference: "high-performance",
+          antialias: false,
+          alpha: false
+        }
       };
 
-      var container = document.querySelector("#unity-container");
-      var canvas = document.querySelector("#unity-canvas");
-      var loadingBar = document.querySelector("#unity-loading-bar");
-      var progressBarFull = document.querySelector("#unity-progress-bar-full");
-      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
-      var width0 = "1066px";
-      var height0 = "600px";
+      const canvas = document.querySelector("#unity-canvas");
+      const progressBarFull = document.querySelector("#unity-progress-bar-full");
+      const fullscreenBtn = document.querySelector("#mobile-fullscreen-toggle");
 
-      // 📱 Detect mobile
-      var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        container.className = "unity-mobile";
+      let rawDPR = window.devicePixelRatio || 1;
+      let smartDPR = Math.min(Math.max(rawDPR, 0.7), 1.0);
+      config.devicePixelRatio = smartDPR;
 
-// 🎯 Smart Dynamic Scaling for WebGL (optimized)
-var rawDPR = window.devicePixelRatio || 1;
-
-// در گوشی‌های خیلی قوی می‌تونیم تا 1.5 بریم، ولی معمولاً بهتره کمتر باشه
-var maxDPR = 1.25;
-var minDPR = 0.75;
-
-// تشخیص بر اساس رزولوشن دستگاه (گوشی‌های بزرگ → scale پایین‌تر)
-var baseWidth = window.innerWidth;
-if (baseWidth > 1080) maxDPR = 1.0;
-if (baseWidth < 720) minDPR = 0.75;
-
-var smartDPR = Math.min(Math.max(rawDPR, minDPR), maxDPR);
-config.devicePixelRatio = smartDPR;
-
-// ⚙️ تنظیم خود Canvas
-function resizeCanvas() {
-  const targetWidth = window.innerWidth * smartDPR;
-  const targetHeight = window.innerHeight * smartDPR;
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
-  canvas.style.width = window.innerWidth + "px";
-  canvas.style.height = window.innerHeight + "px";
-}
-
-function fitMobileCanvas() {
-  resizeCanvas();
-  container.style.width = "100vw";
-  container.style.height = "100vh";
-}
-
-        fitMobileCanvas();
-        window.addEventListener("resize", fitMobileCanvas);
-        window.addEventListener("orientationchange", fitMobileCanvas);
-
-        document.getElementById('mobile-fullscreen-toggle').style.display = "block";
-      } else {
-        // Desktop: Fit canvas and container to window size
-        function fitDesktopCanvas() {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
-          canvas.style.width = window.innerWidth + "px";
-          canvas.style.height = window.innerHeight + "px";
-          container.style.width = "100vw";
-          container.style.height = "100vh";
-        }
-        fitDesktopCanvas();
-        window.addEventListener("resize", fitDesktopCanvas);
-        window.addEventListener("orientationchange", fitDesktopCanvas);
-        // Show fullscreen button on desktop too
-        document.getElementById('mobile-fullscreen-toggle').style.display = "block";
+      function resizeCanvas() {
+        canvas.width = window.innerWidth * smartDPR;
+        canvas.height = window.innerHeight * smartDPR;
+        canvas.style.width = window.innerWidth + "px";
+        canvas.style.height = window.innerHeight + "px";
       }
 
-      loadingBar.style.display = "block";
+      // Debounced resize
+      let resizeTimeout;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(resizeCanvas, 250);
+      });
+      resizeCanvas();
 
-      document.addEventListener(
-        'fullscreenchange',
-        function() {
-          var p = document.getElementById('unity-container');
-          var c = document.getElementById('unity-canvas');
-          if (document.fullscreenElement) {
-            width0 = c.style.width;
-            height0 = c.style.height;
-            setTimeout(
-              function() {
-                c.style.width = getComputedStyle(p).width;
-                c.style.height = getComputedStyle(p).height;
-              },
-              250);
-          } else {
-            // Restore canvas size properly for mobile/desktop
-            c.style.width = width0;
-            c.style.height = height0;
-            // Call resize function to ensure correct sizing
-            if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-              if (typeof fitMobileCanvas === "function") fitMobileCanvas();
-            } else {
-              if (typeof fitDesktopCanvas === "function") fitDesktopCanvas();
-            }
-          }
-        });
-
-      var script = document.createElement("script");
+      // Load Unity
+      const script = document.createElement("script");
       script.src = loaderUrl;
       script.onload = () => {
         createUnityInstance(canvas, config, (progress) => {
           progressBarFull.style.width = 100 * progress + "%";
         }).then((unityInstance) => {
+          document.querySelector("#unity-loading-bar").style.display = "none";
           window.unityInstance = unityInstance;
-          loadingBar.style.display = "none";
-          fullscreenButton.onclick = () => {
-            var p = document.getElementById('unity-container');
-            var c = document.getElementById('unity-canvas');
-            c.requestFullscreen = () => {
-              p.requestFullscreen();
-            };
-            unityInstance.SetFullscreen(1);
-          };
-        }).catch((message) => {
-          alert(message);
-        });
-
-        // Desktop: Try to request fullscreen automatically after Unity is ready
-        if (!isMobile) {
-          var elem = document.getElementById('unity-container');
-          // Try to request fullscreen after a short delay to ensure Unity is ready
-          setTimeout(function() {
-            if (!document.fullscreenElement) {
-              if (elem.requestFullscreen) elem.requestFullscreen();
-              else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-              else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
-            }
-          }, 500);
-        }
+          setupFPSMonitor();
+        }).catch((err) => alert(err));
       };
       document.body.appendChild(script);
 
-      // Fullscreen toggle logic for all devices
-      var fsBtn = document.getElementById('mobile-fullscreen-toggle');
-      function updateFSBtn() {
-        // Always show the button when fullscreen state changes
-        fsBtn.style.display = "block";
-        // Debug: log fullscreen state and button
-        console.log("updateFSBtn called. fullscreenElement:", document.fullscreenElement, "fsBtn:", fsBtn);
-        if (document.fullscreenElement) {
-          fsBtn.textContent = "←";
-          fsBtn.classList.add("active");
-          fsBtn.style.zIndex = "99999";
-        } else {
-          fsBtn.textContent = "⛶";
-          fsBtn.classList.remove("active");
-          fsBtn.style.zIndex = "99999";
-        }
-      }
-      fsBtn.addEventListener("click", function() {
-        var elem = document.getElementById('unity-container');
+      // Fullscreen button
+      fullscreenBtn.addEventListener("click", () => {
+        const elem = document.documentElement;
         if (!document.fullscreenElement) {
-          if (elem.requestFullscreen) elem.requestFullscreen();
-          else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-          else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+          elem.requestFullscreen();
         } else {
-          if (document.exitFullscreen) document.exitFullscreen();
-          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-          else if (document.msExitFullscreen) document.msExitFullscreen();
+          document.exitFullscreen();
         }
       });
-      document.addEventListener('fullscreenchange', updateFSBtn);
-      document.addEventListener('webkitfullscreenchange', updateFSBtn);
-      document.addEventListener('msfullscreenchange', updateFSBtn);
-      updateFSBtn();
+
+      // 🧠 Dynamic FPS Monitor & Resolution Adjuster
+      function setupFPSMonitor() {
+        let lastTime = performance.now();
+        let frameCount = 0;
+
+        function loop() {
+          frameCount++;
+          const now = performance.now();
+          if (now - lastTime >= 2000) { // هر ۲ ثانیه میانگین FPS
+            const fps = (frameCount * 1000) / (now - lastTime);
+            frameCount = 0;
+            lastTime = now;
+
+            if (fps < 30 && smartDPR > 0.7) {
+              smartDPR -= 0.05;
+              smartDPR = Math.max(smartDPR, 0.7);
+              config.devicePixelRatio = smartDPR;
+              resizeCanvas();
+              console.log("⚠️ FPS پایین، کاهش رزولوشن → DPR:", smartDPR.toFixed(2));
+            } else if (fps > 60 && smartDPR < 1.0) {
+              smartDPR += 0.05;
+              smartDPR = Math.min(smartDPR, 1.0);
+              config.devicePixelRatio = smartDPR;
+              resizeCanvas();
+              console.log("✅ FPS بالا، افزایش رزولوشن → DPR:", smartDPR.toFixed(2));
+            }
+          }
+          requestAnimationFrame(loop);
+        }
+        loop();
+      }
     </script>
-    <!-- Mobile Portrait Overlay: حذف از body، منتقل شد به unity-container -->
-<script>
-  // Fallback for mobile orientation overlay
-  function updateMobilePortraitOverlay() {
-    var overlay = document.getElementById('mobile-portrait-overlay');
-    if (!overlay) return;
-    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (!isMobile) {
-      overlay.style.display = "none";
-      return;
-    }
-    // Use window.orientation if available, else use width/height
-    var portrait = false;
-    if (window.matchMedia) {
-      portrait = window.matchMedia("(orientation: portrait)").matches;
-    } else if (window.orientation !== undefined) {
-      portrait = (window.orientation === 0 || window.orientation === 180);
-    } else {
-      portrait = window.innerHeight > window.innerWidth;
-    }
-    // اگر در fullscreen و portrait هستیم، overlay را حتماً نمایش بده
-    var isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
-    if (portrait && isFullscreen) {
-      overlay.style.display = "flex";
-    } else {
-      overlay.style.display = portrait ? "flex" : "none";
-    }
-  }
-  window.addEventListener("orientationchange", updateMobilePortraitOverlay);
-  window.addEventListener("resize", updateMobilePortraitOverlay);
-  document.addEventListener("DOMContentLoaded", updateMobilePortraitOverlay);
-</script>
-<script>
-  // Ensure overlay updates on fullscreen changes as well
-  document.addEventListener("fullscreenchange", updateMobilePortraitOverlay);
-  document.addEventListener("webkitfullscreenchange", updateMobilePortraitOverlay);
-  document.addEventListener("msfullscreenchange", updateMobilePortraitOverlay);
-</script>
   </body>
 </html>
