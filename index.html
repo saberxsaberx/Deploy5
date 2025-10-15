@@ -129,10 +129,10 @@
         container.className = "unity-mobile";
 
         var rawDPR = window.devicePixelRatio || 1;
-        var maxDPR = 1.0;
+        var maxDPR = 1.5;
         var minDPR = 0.75;
         var baseWidth = window.innerWidth;
-        if (baseWidth > 1080) maxDPR = 1.0;
+        if (baseWidth > 1080) maxDPR = 1.5;
         if (baseWidth < 720) minDPR = 0.75;
 
         var smartDPR = Math.min(Math.max(rawDPR, minDPR), maxDPR);
