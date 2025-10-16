@@ -101,9 +101,9 @@
       var buildUrl = "Build";
       var loaderUrl = buildUrl + "/1b80094a3dac85ce393b6f2a1d5ccfcc.loader.js";
       var config = {
-        dataUrl: buildUrl + "/4d8ba1db0a5462ef464cd5a44a131036.data",
+        dataUrl: buildUrl + "/62018dd4224de33f8c4a6507bec563dc.data",
         frameworkUrl: buildUrl + "/ec64e6fff29f063d6233da598ce4cfbe.framework.js",
-        codeUrl: buildUrl + "/91cd8579c6c895a17cc01047edce82b1.wasm",
+        codeUrl: buildUrl + "/8b66964b3e6ee78cf379afae8315dbf6.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
         productName: "Flagm8",
@@ -129,10 +129,10 @@
         container.className = "unity-mobile";
 
         var rawDPR = window.devicePixelRatio || 1;
-        var maxDPR = 1.5;
+        var maxDPR = 1.0;
         var minDPR = 0.75;
         var baseWidth = window.innerWidth;
-        if (baseWidth > 1080) maxDPR = 1.5;
+        if (baseWidth > 1080) maxDPR = 1.0;
         if (baseWidth < 720) minDPR = 0.75;
 
         var smartDPR = Math.min(Math.max(rawDPR, minDPR), maxDPR);
