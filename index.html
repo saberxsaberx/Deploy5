@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | Flagm8</title>
+    <title>Unity WebGL Player | {{{ PRODUCT_NAME }}}</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
@@ -13,7 +13,7 @@
         position: absolute;
         top: 16px;
         left: 16px;
-        z-index: 99999;
+        z-index: 99999; /* Always above canvas */
         background: rgba(0,0,0,0.6);
         color: #fff;
         border: none;
@@ -44,17 +44,18 @@
       }
     </style>
     <style>
+      /* Fullscreen overlay image for mobile portrait */
       #mobile-portrait-overlay {
         display: none;
         position: fixed;
-        z-index: 2147483647 !important;
+        z-index: 2147483647 !important; /* Always on top, even in fullscreen */
         top: 0; left: 0; right: 0; bottom: 0;
         width: 100vw;
         height: 100vh;
         background: #000;
         justify-content: center;
         align-items: center;
-        pointer-events: none;
+        pointer-events: none; /* Allow clicks to pass through if needed */
       }
       #mobile-portrait-overlay img {
         max-width: 100vw;
@@ -90,24 +91,26 @@
       <div id="unity-footer">
         <div id="unity-webgl-logo"></div>
         <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">Flagm8</div>
+        <div id="unity-build-title">{{{ PRODUCT_NAME }}}</div>
       </div>
+      <!-- Move fullscreen button inside unity-container, after canvas, for fullscreen visibility -->
       <button id="mobile-fullscreen-toggle" title="Toggle Fullscreen">⛶</button>
+      <!-- Mobile Portrait Overlay: انتقال به داخل unity-container -->
       <div id="mobile-portrait-overlay">
         <img src="ax.png" alt="ax" />
       </div>
     </div>
     <script>
       var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/1b80094a3dac85ce393b6f2a1d5ccfcc.loader.js";
+      var loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
       var config = {
-        dataUrl: buildUrl + "/62018dd4224de33f8c4a6507bec563dc.data",
-        frameworkUrl: buildUrl + "/ec64e6fff29f063d6233da598ce4cfbe.framework.js",
-        codeUrl: buildUrl + "/8b66964b3e6ee78cf379afae8315dbf6.wasm",
+        dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+        frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+        codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
         streamingAssetsUrl: "StreamingAssets",
-        companyName: "DefaultCompany",
-        productName: "Flagm8",
-        productVersion: "1.0.0",
+        companyName: "{{{ COMPANY_NAME }}}",
+        productName: "{{{ PRODUCT_NAME }}}",
+        productVersion: "{{{ PRODUCT_VERSION }}}",
         webglContextAttributes: {
           preserveDrawingBuffer: false,
           powerPreference: "high-performance",
@@ -124,25 +127,22 @@
       var width0 = "1066px";
       var height0 = "600px";
 
+      // 📱 Detect mobile
       var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
         container.className = "unity-mobile";
 
+        // 🎯 Smart Scaling
         var rawDPR = window.devicePixelRatio || 1;
-        var maxDPR = 1.0;
-        var minDPR = 0.75;
-        var baseWidth = window.innerWidth;
-        if (baseWidth > 1080) maxDPR = 1.0;
-        if (baseWidth < 720) minDPR = 0.75;
-
+        var maxDPR = 2.0; // حداکثر کیفیت
+        var minDPR = 1.0; // حداقل کیفیت
         var smartDPR = Math.min(Math.max(rawDPR, minDPR), maxDPR);
+
         config.devicePixelRatio = smartDPR;
 
         function resizeCanvas() {
-          const targetWidth = window.innerWidth * smartDPR;
-          const targetHeight = window.innerHeight * smartDPR;
-          canvas.width = targetWidth;
-          canvas.height = targetHeight;
+          canvas.width = window.innerWidth * smartDPR;
+          canvas.height = window.innerHeight * smartDPR;
           canvas.style.width = window.innerWidth + "px";
           canvas.style.height = window.innerHeight + "px";
         }
@@ -154,15 +154,12 @@
         }
 
         fitMobileCanvas();
-        let resizeTimeout;
-        window.addEventListener("resize", () => {
-          clearTimeout(resizeTimeout);
-          resizeTimeout = setTimeout(fitMobileCanvas, 250);
-        });
+        window.addEventListener("resize", fitMobileCanvas);
         window.addEventListener("orientationchange", fitMobileCanvas);
 
         document.getElementById('mobile-fullscreen-toggle').style.display = "block";
       } else {
+        // Desktop: Fit canvas and container to window size
         function fitDesktopCanvas() {
           canvas.width = window.innerWidth;
           canvas.height = window.innerHeight;
@@ -174,31 +171,38 @@
         fitDesktopCanvas();
         window.addEventListener("resize", fitDesktopCanvas);
         window.addEventListener("orientationchange", fitDesktopCanvas);
+        // Show fullscreen button on desktop too
         document.getElementById('mobile-fullscreen-toggle').style.display = "block";
       }
 
       loadingBar.style.display = "block";
 
-      document.addEventListener('fullscreenchange', function() {
-        var p = document.getElementById('unity-container');
-        var c = document.getElementById('unity-canvas');
-        if (document.fullscreenElement) {
-          width0 = c.style.width;
-          height0 = c.style.height;
-          setTimeout(function() {
-            c.style.width = getComputedStyle(p).width;
-            c.style.height = getComputedStyle(p).height;
-          }, 250);
-        } else {
-          c.style.width = width0;
-          c.style.height = height0;
-          if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-            if (typeof fitMobileCanvas === "function") fitMobileCanvas();
+      document.addEventListener(
+        'fullscreenchange',
+        function() {
+          var p = document.getElementById('unity-container');
+          var c = document.getElementById('unity-canvas');
+          if (document.fullscreenElement) {
+            width0 = c.style.width;
+            height0 = c.style.height;
+            setTimeout(
+              function() {
+                c.style.width = getComputedStyle(p).width;
+                c.style.height = getComputedStyle(p).height;
+              },
+              250);
           } else {
-            if (typeof fitDesktopCanvas === "function") fitDesktopCanvas();
+            // Restore canvas size properly for mobile/desktop
+            c.style.width = width0;
+            c.style.height = height0;
+            // Call resize function to ensure correct sizing
+            if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+              if (typeof fitMobileCanvas === "function") fitMobileCanvas();
+            } else {
+              if (typeof fitDesktopCanvas === "function") fitDesktopCanvas();
+            }
           }
-        }
-      });
+        });
 
       var script = document.createElement("script");
       script.src = loaderUrl;
@@ -208,45 +212,6 @@
         }).then((unityInstance) => {
           window.unityInstance = unityInstance;
           loadingBar.style.display = "none";
-
-          // 🎯 FPS Monitor & Auto Resolution Adjuster (حداقل فریم 30)
-          (function setupFPSMonitor() {
-            let smartDPR = config.devicePixelRatio || 1.0;
-            let lastTime = performance.now();
-            let frameCount = 0;
-            const fpsTarget = 30;
-            const minDPR = 0.9;
-            const maxDPR = 2;
-
-            function adjustResolution(currentFps) {
-              if (currentFps < fpsTarget && smartDPR > minDPR) {
-                smartDPR = Math.max(smartDPR - 0.05, minDPR);
-                config.devicePixelRatio = smartDPR;
-                console.log("⚠️ FPS پایین → کاهش رزولوشن → DPR:", smartDPR.toFixed(2));
-                resizeCanvas();
-              } else if (currentFps > fpsTarget + 10 && smartDPR < maxDPR) {
-                smartDPR = Math.min(smartDPR + 0.05, maxDPR);
-                config.devicePixelRatio = smartDPR;
-                console.log("✅ FPS بالا → افزایش رزولوشن → DPR:", smartDPR.toFixed(2));
-                resizeCanvas();
-              }
-            }
-
-            function monitor() {
-              frameCount++;
-              const now = performance.now();
-              if (now - lastTime >= 2000) {
-                const fps = (frameCount * 1000) / (now - lastTime);
-                frameCount = 0;
-                lastTime = now;
-                adjustResolution(fps);
-              }
-              requestAnimationFrame(monitor);
-            }
-
-            monitor();
-          })();
-
           fullscreenButton.onclick = () => {
             var p = document.getElementById('unity-container');
             var c = document.getElementById('unity-canvas');
@@ -259,8 +224,10 @@
           alert(message);
         });
 
+        // Desktop: Try to request fullscreen automatically after Unity is ready
         if (!isMobile) {
           var elem = document.getElementById('unity-container');
+          // Try to request fullscreen after a short delay to ensure Unity is ready
           setTimeout(function() {
             if (!document.fullscreenElement) {
               if (elem.requestFullscreen) elem.requestFullscreen();
@@ -272,15 +239,21 @@
       };
       document.body.appendChild(script);
 
+      // Fullscreen toggle logic for all devices
       var fsBtn = document.getElementById('mobile-fullscreen-toggle');
       function updateFSBtn() {
+        // Always show the button when fullscreen state changes
         fsBtn.style.display = "block";
+        // Debug: log fullscreen state and button
+        console.log("updateFSBtn called. fullscreenElement:", document.fullscreenElement, "fsBtn:", fsBtn);
         if (document.fullscreenElement) {
           fsBtn.textContent = "←";
           fsBtn.classList.add("active");
+          fsBtn.style.zIndex = "99999";
         } else {
           fsBtn.textContent = "⛶";
           fsBtn.classList.remove("active");
+          fsBtn.style.zIndex = "99999";
         }
       }
       fsBtn.addEventListener("click", function() {
@@ -300,37 +273,43 @@
       document.addEventListener('msfullscreenchange', updateFSBtn);
       updateFSBtn();
     </script>
-
-    <script>
-      function updateMobilePortraitOverlay() {
-        var overlay = document.getElementById('mobile-portrait-overlay');
-        if (!overlay) return;
-        var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        if (!isMobile) {
-          overlay.style.display = "none";
-          return;
-        }
-        var portrait = false;
-        if (window.matchMedia) {
-          portrait = window.matchMedia("(orientation: portrait)").matches;
-        } else if (window.orientation !== undefined) {
-          portrait = (window.orientation === 0 || window.orientation === 180);
-        } else {
-          portrait = window.innerHeight > window.innerWidth;
-        }
-        var isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
-        if (portrait && isFullscreen) {
-          overlay.style.display = "flex";
-        } else {
-          overlay.style.display = portrait ? "flex" : "none";
-        }
-      }
-      window.addEventListener("orientationchange", updateMobilePortraitOverlay);
-      window.addEventListener("resize", updateMobilePortraitOverlay);
-      document.addEventListener("DOMContentLoaded", updateMobilePortraitOverlay);
-      document.addEventListener("fullscreenchange", updateMobilePortraitOverlay);
-      document.addEventListener("webkitfullscreenchange", updateMobilePortraitOverlay);
-      document.addEventListener("msfullscreenchange", updateMobilePortraitOverlay);
-    </script>
+    <!-- Mobile Portrait Overlay: حذف از body، منتقل شد به unity-container -->
+<script>
+  // Fallback for mobile orientation overlay
+  function updateMobilePortraitOverlay() {
+    var overlay = document.getElementById('mobile-portrait-overlay');
+    if (!overlay) return;
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (!isMobile) {
+      overlay.style.display = "none";
+      return;
+    }
+    // Use window.orientation if available, else use width/height
+    var portrait = false;
+    if (window.matchMedia) {
+      portrait = window.matchMedia("(orientation: portrait)").matches;
+    } else if (window.orientation !== undefined) {
+      portrait = (window.orientation === 0 || window.orientation === 180);
+    } else {
+      portrait = window.innerHeight > window.innerWidth;
+    }
+    // اگر در fullscreen و portrait هستیم، overlay را حتماً نمایش بده
+    var isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+    if (portrait && isFullscreen) {
+      overlay.style.display = "flex";
+    } else {
+      overlay.style.display = portrait ? "flex" : "none";
+    }
+  }
+  window.addEventListener("orientationchange", updateMobilePortraitOverlay);
+  window.addEventListener("resize", updateMobilePortraitOverlay);
+  document.addEventListener("DOMContentLoaded", updateMobilePortraitOverlay);
+</script>
+<script>
+  // Ensure overlay updates on fullscreen changes as well
+  document.addEventListener("fullscreenchange", updateMobilePortraitOverlay);
+  document.addEventListener("webkitfullscreenchange", updateMobilePortraitOverlay);
+  document.addEventListener("msfullscreenchange", updateMobilePortraitOverlay);
+</script>
   </body>
 </html>
