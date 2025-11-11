@@ -1,1 +1,1 @@
-https://neocyber-production.up.railway.app/
+https://neocyber-development.up.railway.app/
